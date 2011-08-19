@@ -57,7 +57,7 @@ use Try::Tiny;
 
 my $handler = UploadHandler->new(app => app);
 
-plugin 'pod_renderer';    # for /perldoc
+plugin 'PODRenderer';    # for /perldoc
 
 # enable receiving uploads up to 1GB
 $ENV{MOJO_MAX_MESSAGE_SIZE} = 1_073_741_824;
