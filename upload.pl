@@ -1,58 +1,58 @@
 #!/usr/bin/env perl
 
-package UploadHandler;
-use Mojo::Base -base;
+{
+    package UploadHandler;
+    use Mojo::Base -base;
 
-use File::Basename 'dirname';
-use File::Spec;
-use IO::All;
+    use File::Basename 'dirname';
+    use File::Spec;
+    use IO::All;
 
-has app => sub { Mojolicious::Controller->new };
-has files_dir =>
-  sub { join '/', File::Spec->splitdir( dirname(__FILE__) ), 'files' };
-has upload => sub { Mojo::Upload->new };
+    has app => sub { Mojolicious::Controller->new };
+    has files_dir =>
+      sub { join '/', File::Spec->splitdir( dirname(__FILE__) ), 'files' };
+    has upload => sub { Mojo::Upload->new };
 
-sub list {
-    my $self = shift;
+    sub list {
+        my $self = shift;
 
-    my $list;
-    for my $file ( io( $self->files_dir )->all ) {
-        next if $file->name =~ /.htaccess/;
-        my $download_url =
-          $self->app->url_for( join '/', '/download', $file->name );
-        my $delete_url =
-          $self->app->url_for( join '/', '/delete', $file->name );
-        push @$list,
-          {
-            name        => $file->name,
-            size        => $file->size,
-            url         => $download_url,
-            delete_url  => $delete_url,
-            delete_type => 'DELETE'
-          };
+        my $list;
+        for my $file ( io( $self->files_dir )->all ) {
+            next if $file->name =~ /.htaccess/;
+            my $download_url =
+              $self->app->url_for( join '/', '/download', $file->name );
+            my $delete_url =
+              $self->app->url_for( join '/', '/delete', $file->name );
+            push @$list,
+              {
+                name        => $file->name,
+                size        => $file->size,
+                url         => $download_url,
+                delete_url  => $delete_url,
+                delete_type => 'DELETE'
+              };
+        }
+        return $list;
     }
-    return $list;
-}
 
-sub do_upload {
-    my $self = shift;
-    $self->upload->move_to( join '/', $self->files_dir,
-        $self->upload->filename );
-    return $self->list;
-}
+    sub do_upload {
+        my $self = shift;
+        $self->upload->move_to( join '/', $self->files_dir,
+            $self->upload->filename );
+        return $self->list;
+    }
 
-sub download {
-    my ( $self, $file ) = @_;
-    return io($file)->all;
-}
+    sub download {
+        my ( $self, $file ) = @_;
+        return io($file)->all;
+    }
 
-sub delete_upload {
-    my ( $self, $file ) = @_;
-    io($file)->unlink;
-    return $self->list;
+    sub delete_upload {
+        my ( $self, $file ) = @_;
+        io($file)->unlink;
+        return $self->list;
+    }
 }
-
-package main;
 
 use Mojolicious::Lite;
 use Try::Tiny;
