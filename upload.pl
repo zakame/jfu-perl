@@ -19,9 +19,8 @@
         for my $file ( io( $self->files_dir )->all ) {
             next if $file->name =~ /.htaccess/;
             my $download_url =
-              $self->app->url_for( join '/', '/download', $file->name );
-            my $delete_url =
-              $self->app->url_for( join '/', '/delete', $file->name );
+              $self->app->url_for("/download/@{[ $file->name ]}");
+            my $delete_url = $self->app->url_for("/delete/@{[ $file->name ]}");
             push @$list,
               {
                 name        => $file->name,
