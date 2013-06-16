@@ -8,10 +8,9 @@
     use File::Spec;
     use IO::All;
 
-    has app => sub { Mojolicious::Controller->new };
-    has files_dir =>
-      sub { join '/', File::Spec->splitdir( dirname(__FILE__) ), 'files' };
-    has upload => sub { Mojo::Upload->new };
+    has app       => sub { Mojolicious::Controller->new };
+    has files_dir => sub { File::Spec->catdir( dirname(__FILE__), 'files' ) };
+    has upload    => sub { Mojo::Upload->new };
 
     sub list {
         my $self = shift;
