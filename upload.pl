@@ -5,25 +5,25 @@
     use Mojo::Base -base;
 
     use File::Basename 'dirname';
-    use File::Spec;
     use IO::All;
 
     has app       => sub { Mojolicious::Controller->new };
-    has files_dir => sub { File::Spec->catdir( dirname(__FILE__), 'files' ) };
+    has files_dir => sub { io( dirname(__FILE__) )->catdir('files') };
     has upload    => sub { Mojo::Upload->new };
 
     sub list {
         my $self = shift;
 
         my $list;
-        for my $file ( io( $self->files_dir )->all ) {
+        for my $file ( $self->files_dir->all ) {
             next if $file->name =~ /.htaccess/;
             my $download_url =
-              $self->app->url_for("/download/@{[ $file->name ]}");
-            my $delete_url = $self->app->url_for("/delete/@{[ $file->name ]}");
+              $self->app->url_for("/download/@{[ $file->filename ]}");
+            my $delete_url =
+              $self->app->url_for("/delete/@{[ $file->filename ]}");
             push @$list,
               {
-                name        => $file->name,
+                name        => $file->filename,
                 size        => $file->size,
                 url         => $download_url,
                 delete_url  => $delete_url,
@@ -35,19 +35,19 @@
 
     sub do_upload {
         my $self = shift;
-        $self->upload->move_to( join '/', $self->files_dir,
-            $self->upload->filename );
+        $self->upload->move_to(
+            $self->files_dir->catfile( $self->upload->filename ) );
         return $self->list;
     }
 
     sub download {
         my ( $self, $file ) = @_;
-        return io($file)->all;
+        return $self->files_dir->catfile($file)->all;
     }
 
     sub delete_upload {
         my ( $self, $file ) = @_;
-        io($file)->unlink;
+        $self->files_dir->catfile($file)->unlink;
         return $self->list;
     }
 }
