@@ -4,12 +4,10 @@
     package UploadHandler;
     use Mojo::Base -base;
 
-    use File::Basename 'dirname';
     use IO::All;
 
     has app       => sub { Mojolicious::Controller->new };
-    has files_dir => sub { io( dirname(__FILE__) )->catdir('files') };
-    has upload    => sub { Mojo::Upload->new };
+    has files_dir => sub { io( $_[0]->app->home )->catdir('files') };
 
     sub list {
         my $self = shift;
@@ -34,9 +32,9 @@
     }
 
     sub do_upload {
-        my $self = shift;
-        $self->upload->move_to(
-            $self->files_dir->catfile( $self->upload->filename ) );
+        my ( $self, $upload ) = @_;
+        my $dest = $self->files_dir->catfile( $upload->filename );
+        $upload->move_to( $dest->name );
         return $self->list;
     }
 
@@ -71,11 +69,10 @@ get '/upload' => sub { shift->render( json => $handler->list ) };
 # POST /upload (push one or more files to app)
 post '/upload' => sub {
     my $self    = shift;
-    my @uploads = $self->req->upload('files[]');
+    my $uploads = $self->req->every_upload('files[]');
 
-    for my $upload (@uploads) {
-        $handler->upload($upload) && $handler->do_upload;
-    }
+    # Use Mojo::Base K combinator
+    $handler->tap( do_upload => @$uploads );
 
     # return JSON list of uploads
     $self->render( json => $handler->list );
