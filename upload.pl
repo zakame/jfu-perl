@@ -15,18 +15,17 @@
         my $list;
         for my $file ( $self->files_dir->all ) {
             next if $file->name =~ /.htaccess/;
-            my $download_url =
-              $self->app->url_for("/download/@{[ $file->filename ]}");
-            my $delete_url =
-              $self->app->url_for("/delete/@{[ $file->filename ]}");
-            push @$list,
-              {
+            my $download_url
+                = $self->app->url_for("/download/@{[ $file->filename ]}");
+            my $delete_url
+                = $self->app->url_for("/delete/@{[ $file->filename ]}");
+            push @$list => {
                 name        => $file->filename,
                 size        => $file->size,
                 url         => $download_url,
                 delete_url  => $delete_url,
                 delete_type => 'DELETE'
-              };
+            };
         }
         return $list;
     }
