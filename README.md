@@ -10,7 +10,6 @@ To run this, you'll need a recent Perl (at least 5.14.2) with
 [cpanminus][cpanm]:
 
     cpanm --installdeps .
-    mkdir files
     morbo upload.pl
 
 [cpanm]: https://metacpan.org/pod/App::cpanminus

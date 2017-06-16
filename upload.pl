@@ -39,7 +39,7 @@
 
 use Mojolicious::Lite;
 
-my $handler = UploadHandler->new( dir => app->home->child('files') );
+my $handler = UploadHandler->new( dir => app->home->child('files')->make_path );
 
 helper files => sub {
     my ( $self, $files ) = @_;
