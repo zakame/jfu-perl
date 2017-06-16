@@ -31,10 +31,21 @@
     }
 
     sub do_upload {
-        my ( $self, $upload ) = @_;
-        my $dest = $self->files_dir->catfile( $upload->filename );
-        $upload->move_to( $dest->name );
-        return $self->list;
+        my ( $self, $file ) = @_;
+        my $dest = $self->files_dir->catfile( $file->filename );
+        $file->move_to( $dest->name );
+        my $download_url
+            = $self->app->url_for("/download/@{[ $file->filename ]}");
+        my $delete_url
+            = $self->app->url_for("/delete/@{[ $file->filename ]}");
+        return +[
+            {   name        => $file->filename,
+                size        => $file->size,
+                url         => $download_url,
+                delete_url  => $delete_url,
+                delete_type => 'DELETE'
+            }
+        ];
     }
 
     sub download {
@@ -65,16 +76,11 @@ get '/' => 'index';
 # GET /upload (retrieves stored file list)
 get '/upload' => sub { shift->render( json => $handler->list ) };
 
-# POST /upload (push one or more files to app)
+# POST /upload
 post '/upload' => sub {
-    my $self    = shift;
-    my $uploads = $self->req->every_upload('files[]');
-
-    # Use Mojo::Base K combinator
-    $handler->tap( do_upload => @$uploads );
-
-    # return JSON list of uploads
-    $self->render( json => $handler->list );
+    my $self = shift;
+    my $file = $self->req->upload('files[]');
+    $self->render( json => $handler->do_upload($file) );
 };
 
 # /download/files/foo.txt
