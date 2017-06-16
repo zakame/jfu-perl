@@ -6,8 +6,8 @@
 
     use IO::All;
 
-    has app       => sub { Mojolicious::Controller->new };
-    has files_dir => sub { io( $_[0]->app->home )->catdir('files') };
+    has 'dir';
+    has files_dir => sub { io( shift->dir ) };
 
     sub list {
         my $self = shift;
@@ -15,17 +15,7 @@
         my $list;
         for my $file ( $self->files_dir->all ) {
             next if $file->name =~ /.htaccess/;
-            my $download_url
-                = $self->app->url_for("/download/@{[ $file->filename ]}");
-            my $delete_url
-                = $self->app->url_for("/delete/@{[ $file->filename ]}");
-            push @$list => {
-                name        => $file->filename,
-                size        => $file->size,
-                url         => $download_url,
-                delete_url  => $delete_url,
-                delete_type => 'DELETE'
-            };
+            push @$list, $file;
         }
         return $list;
     }
@@ -34,18 +24,7 @@
         my ( $self, $file ) = @_;
         my $dest = $self->files_dir->catfile( $file->filename );
         $file->move_to( $dest->name );
-        my $download_url
-            = $self->app->url_for("/download/@{[ $file->filename ]}");
-        my $delete_url
-            = $self->app->url_for("/delete/@{[ $file->filename ]}");
-        return +[
-            {   name        => $file->filename,
-                size        => $file->size,
-                url         => $download_url,
-                delete_url  => $delete_url,
-                delete_type => 'DELETE'
-            }
-        ];
+        return +[$file];
     }
 
     sub download {
@@ -56,14 +35,27 @@
     sub delete_upload {
         my ( $self, $file ) = @_;
         $self->files_dir->catfile($file)->unlink;
-        return $self->list;
     }
 }
 
 use Mojolicious::Lite;
 use Try::Tiny;
 
-my $handler = UploadHandler->new( app => app );
+my $handler = UploadHandler->new( dir => app->home->child('files') );
+
+helper files => sub {
+    my ( $self, $files ) = @_;
+    +[  map {
+            +{  name => $_->filename,
+                size => $_->size,
+                url  => $self->app->url_for("/download/@{[ $_->filename ]}"),
+                delete_url =>
+                    $self->app->url_for("/delete/@{[ $_->filename ]}"),
+                delete_type => 'DELETE'
+                }
+        } @$files
+    ];
+};
 
 plugin 'PODRenderer';    # for /perldoc
 
@@ -74,13 +66,16 @@ $ENV{MOJO_MAX_MESSAGE_SIZE} = 1_073_741_824;
 get '/' => 'index';
 
 # GET /upload (retrieves stored file list)
-get '/upload' => sub { shift->render( json => $handler->list ) };
+get '/upload' => sub {
+    my $self = shift;
+    $self->render( json => $self->files( $handler->list ) );
+};
 
 # POST /upload
 post '/upload' => sub {
     my $self = shift;
     my $file = $self->req->upload('files[]');
-    $self->render( json => $handler->do_upload($file) );
+    $self->render( json => $self->files( $handler->do_upload($file) ) );
 };
 
 # /download/files/foo.txt
