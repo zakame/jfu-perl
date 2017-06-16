@@ -11,30 +11,24 @@
 
     sub list {
         my $self = shift;
-
-        my $list;
-        for my $file ( $self->files_dir->all ) {
-            next if $file->name =~ /.htaccess/;
-            push @$list, $file;
-        }
-        return $list;
+        +[ grep { !/.htaccess/ } $self->files_dir->all ];
     }
 
     sub check {
         my ( $self, $file ) = @_;
-        return io( $self->files_dir->catfile($file) )->exists;
+        io( $self->files_dir->catfile($file) )->exists;
     }
 
     sub do_upload {
         my ( $self, $file ) = @_;
         my $dest = $self->files_dir->catfile( $file->filename );
         $file->move_to( $dest->name );
-        return +[$file];
+        +[$file];
     }
 
     sub download {
         my ( $self, $file ) = @_;
-        return $self->files_dir->catfile($file)->all;
+        $self->files_dir->catfile($file)->all;
     }
 
     sub delete_upload {
