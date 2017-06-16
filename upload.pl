@@ -20,6 +20,11 @@
         return $list;
     }
 
+    sub check {
+        my ( $self, $file ) = @_;
+        return io( $self->files_dir->catfile($file) )->exists;
+    }
+
     sub do_upload {
         my ( $self, $file ) = @_;
         my $dest = $self->files_dir->catfile( $file->filename );
@@ -39,7 +44,6 @@
 }
 
 use Mojolicious::Lite;
-use Try::Tiny;
 
 my $handler = UploadHandler->new( dir => app->home->child('files') );
 
@@ -83,15 +87,12 @@ get '/download/*key' => sub {
     my $self = shift;
     my $key  = $self->param('key');
 
-    try {
-        $self->render(
-            data   => $handler->download($key),
-            format => 'application/octet-stream'
-        );
-    }
-    catch {
-        $self->render_not_found;
-    }
+    return $self->reply->not_found
+        unless $handler->check($key);
+    $self->render(
+        data   => $handler->download($key),
+        format => 'application/octet-stream'
+    );
 };
 
 # /delete/files/bar.tar.gz
