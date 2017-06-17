@@ -23,7 +23,7 @@
         my ( $self, $file ) = @_;
         my $dest = $self->files_dir->child( $file->filename );
         $file->move_to($dest);
-        +[$dest];
+        +[ $dest->realpath ];
     }
 
     sub download {
@@ -45,7 +45,7 @@ my $handler
 helper files => sub {
     my ( $self, $files ) = @_;
     +[  map {
-            +{  name => app->b($_->basename)->decode,
+            +{  name => $self->b( $_->basename )->decode,
                 size => -s $_,
                 url  => $self->app->url_for("/download/@{[ $_->basename ]}"),
                 delete_url =>
