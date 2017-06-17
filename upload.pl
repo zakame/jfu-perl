@@ -4,36 +4,36 @@
     package UploadHandler;
     use Mojo::Base -base;
 
-    use IO::All;
+    use Mojo::File;
 
     has 'dir';
-    has files_dir => sub { io( shift->dir ) };
+    has files_dir => sub { Mojo::File->new( shift->dir ) };
 
     sub list {
         my $self = shift;
-        +[ grep { !/.htaccess/ } $self->files_dir->all ];
+        $self->files_dir->list;
     }
 
     sub check {
         my ( $self, $file ) = @_;
-        io( $self->files_dir->catfile($file) )->exists;
+        -f $self->files_dir->child($file);
     }
 
     sub do_upload {
         my ( $self, $file ) = @_;
-        my $dest = $self->files_dir->catfile( $file->filename );
-        $file->move_to( $dest->name );
-        +[$file];
+        my $dest = $self->files_dir->child( $file->filename );
+        $file->move_to($dest);
+        +[$dest];
     }
 
     sub download {
         my ( $self, $file ) = @_;
-        $self->files_dir->catfile($file)->all;
+        $self->files_dir->child($file)->slurp;
     }
 
     sub delete_upload {
         my ( $self, $file ) = @_;
-        $self->files_dir->catfile($file)->unlink;
+        unlink $self->files_dir->child($file);
     }
 }
 
@@ -45,11 +45,11 @@ my $handler
 helper files => sub {
     my ( $self, $files ) = @_;
     +[  map {
-            +{  name => $_->filename,
-                size => $_->size,
-                url  => $self->app->url_for("/download/@{[ $_->filename ]}"),
+            +{  name => $_->basename,
+                size => -s $_,
+                url  => $self->app->url_for("/download/@{[ $_->basename ]}"),
                 delete_url =>
-                    $self->app->url_for("/delete/@{[ $_->filename ]}"),
+                    $self->app->url_for("/delete/@{[ $_->basename ]}"),
                 delete_type => 'DELETE'
                 }
         } @$files
