@@ -45,7 +45,7 @@ my $handler
 helper files => sub {
     my ( $self, $files ) = @_;
     +[  map {
-            +{  name => $_->basename,
+            +{  name => app->b($_->basename)->decode,
                 size => -s $_,
                 url  => $self->app->url_for("/download/@{[ $_->basename ]}"),
                 delete_url =>
