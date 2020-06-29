@@ -1,1 +1,1 @@
-requires 'Mojolicious', '7.33';
+requires 'Mojolicious', '8';
